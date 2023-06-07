@@ -2,13 +2,15 @@ package com.example.restservice;
 
 import java.util.UUID;
 
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -19,33 +21,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Controller {
     ConcurrentHashMap<String, Record> db = new ConcurrentHashMap<>();
 
-		// can move this to somewhere else later
-		public boolean verify_uuid(String id) {
-			try {
-				UUID.fromString(id);
-			} catch(IllegalArgumentException e) {
-				return false;
-			}
-			return true;
+	@ControllerAdvice
+	class GlobalControllerExceptionHandler {
+		@ResponseStatus(HttpStatus.BAD_REQUEST)
+		@ExceptionHandler(IllegalArgumentException.class)
+		public void handleConflict() {
+			// Nothing to do
 		}
+	}
 
     @PostMapping(value="/guid/{id}")
-    public ResponseEntity f(@PathVariable("id") String id) {
-			if (!verify_uuid(id)) {
-				return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-			}
-			long expire=0;
-			String user="user";
-			Record rec = new Record(id, expire, user);
+
+    public ResponseEntity f(@PathVariable("id") String id, @RequestBody Record req) {
+			UUID.fromString(id);
+			Record rec = new Record(req.id(), req.ts(), req.user());
 			db.put(id, rec);
 			return ResponseEntity.ok().body(rec);
     }
 
     @GetMapping(value="/guid/{id}")
     public ResponseEntity g(@PathVariable("id") String id) {
-			if (!verify_uuid(id)) {
-				return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-			}
+			UUID.fromString(id);
 			Record rec = db.get(id);
 			if (rec == null) {
 				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -55,17 +51,13 @@ public class Controller {
     }
 
 		@PutMapping(value = "/guid/{id}")
-		public ResponseEntity h(@PathVariable("id") String id) {
-			if (!verify_uuid(id)) {
-				return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-			}
+		public ResponseEntity h(@PathVariable("id") String id, @RequestBody Record req) {
+			UUID.fromString(id);
 			Record rec = db.get(id);
 			if (rec == null) {
 				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 			} else {
-				long expire=0;
-				String user="new_user";
-				Record rec_new = new Record(id, expire, user);
+      	Record rec_new = new Record(req.id(), req.ts(), req.user());
 				db.put(id, rec_new);
 				return ResponseEntity.ok().body(db.get(id));
 			}
@@ -73,9 +65,7 @@ public class Controller {
 
 		@DeleteMapping(value = "/guid/{id}")
 		public ResponseEntity i(@PathVariable("id") String id) {
-			if (!verify_uuid(id)) {
-				return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-			}
+			UUID.fromString(id);
 			Record rec = db.get(id);
 			if (rec == null) {
 				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
