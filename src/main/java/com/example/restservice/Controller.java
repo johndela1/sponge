@@ -74,4 +74,18 @@ public class Controller {
 				return ResponseEntity.ok().body("");
 			}
 		}
+
+    class C {
+	String k;
+
+	public void setK(String v) {
+	    this.k = v;
+	}
+    }
+
+    @PostMapping(value="/c")
+    public ResponseEntity f(C c) {
+	System.out.println("XXXX", c.k, c);
+	return ResponseEntity.ok(HttpStatus.OK);
+    }
 }
